@@ -1,4 +1,4 @@
-module github.com/darshanhs09/argo-rollouts
+module github.com/argoproj/argo-rollouts
 
 go 1.16
 
