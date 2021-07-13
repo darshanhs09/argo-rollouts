@@ -54,7 +54,6 @@ require (
 	k8s.io/kube-openapi v0.0.0-20210216185858-15cd8face8d6
 	k8s.io/kubectl v0.19.4
 	k8s.io/kubernetes v1.20.4
-	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
 )
 
 replace (
