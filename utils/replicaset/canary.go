@@ -293,7 +293,7 @@ func GetCurrentCanaryStep(rollout *v1alpha1.Rollout) (*v1alpha1.CanaryStep, *int
 
 // GetCanaryReplicasOrWeight either returns a static set of replicas or a weight percentage
 func GetCanaryReplicasOrWeight(rollout *v1alpha1.Rollout) (*int32, int32) {
-	if rollout.Status.PromoteFull {
+	if rollout.Status.PromoteFull || rollout.Status.CurrentPodHash == rollout.Status.StableRS {
 		return nil, 100
 	}
 	if scs := UseSetCanaryScale(rollout); scs != nil {
@@ -331,6 +331,10 @@ func GetCurrentSetWeight(rollout *v1alpha1.Rollout) int32 {
 // TrafficRouting is required to be set for SetCanaryScale to be applicable.
 // If MatchTrafficWeight is set after a previous SetCanaryScale step, it will likewise be ignored.
 func UseSetCanaryScale(rollout *v1alpha1.Rollout) *v1alpha1.SetCanaryScale {
+	// Return nil when rollout is aborted
+	if rollout.Status.Abort {
+		return nil
+	}
 	currentStep, currentStepIndex := GetCurrentCanaryStep(rollout)
 	if currentStep == nil {
 		return nil

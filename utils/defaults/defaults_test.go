@@ -3,6 +3,8 @@ package defaults
 import (
 	"testing"
 
+	"k8s.io/utils/pointer"
+
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -13,6 +15,20 @@ func TestGetReplicasOrDefault(t *testing.T) {
 	replicas := int32(2)
 	assert.Equal(t, replicas, GetReplicasOrDefault(&replicas))
 	assert.Equal(t, DefaultReplicas, GetReplicasOrDefault(nil))
+}
+
+func TestGetExperimentScaleDownDelaySecondsOrDefault(t *testing.T) {
+	exp := v1alpha1.Experiment{
+		Spec: v1alpha1.ExperimentSpec{
+			ScaleDownDelaySeconds: pointer.Int32Ptr(0),
+		},
+	}
+	// Custom value
+	assert.Equal(t, *exp.Spec.ScaleDownDelaySeconds, GetExperimentScaleDownDelaySecondsOrDefault(&exp))
+
+	// Default value
+	exp.Spec.ScaleDownDelaySeconds = nil
+	assert.Equal(t, DefaultScaleDownDelaySeconds, GetExperimentScaleDownDelaySecondsOrDefault(&exp))
 }
 
 func TestGetRevisionHistoryOrDefault(t *testing.T) {
@@ -162,6 +178,62 @@ func TestGetScaleDownDelaySecondsOrDefault(t *testing.T) {
 			},
 		}
 		assert.Equal(t, scaleDownDelaySeconds, GetScaleDownDelaySecondsOrDefault(canaryWithTrafficRouting))
+	}
+}
+
+func TestGetAbortScaleDownDelaySecondsOrDefault(t *testing.T) {
+	{
+		abortScaleDownDelaySeconds := int32(60)
+		blueGreenNonDefaultValue := &v1alpha1.Rollout{
+			Spec: v1alpha1.RolloutSpec{
+				Strategy: v1alpha1.RolloutStrategy{
+					BlueGreen: &v1alpha1.BlueGreenStrategy{
+						AbortScaleDownDelaySeconds: &abortScaleDownDelaySeconds,
+					},
+				},
+			},
+		}
+		assert.Equal(t, abortScaleDownDelaySeconds, GetAbortScaleDownDelaySecondsOrDefault(blueGreenNonDefaultValue))
+	}
+	{
+		blueGreenDefaultValue := &v1alpha1.Rollout{
+			Spec: v1alpha1.RolloutSpec{
+				Strategy: v1alpha1.RolloutStrategy{
+					BlueGreen: &v1alpha1.BlueGreenStrategy{},
+				},
+			},
+		}
+		assert.Equal(t, DefaultAbortScaleDownDelaySeconds, GetAbortScaleDownDelaySecondsOrDefault(blueGreenDefaultValue))
+	}
+	{
+		abortScaleDownDelaySeconds := int32(60)
+		canaryNonDefaultValue := &v1alpha1.Rollout{
+			Spec: v1alpha1.RolloutSpec{
+				Strategy: v1alpha1.RolloutStrategy{
+					Canary: &v1alpha1.CanaryStrategy{
+						AbortScaleDownDelaySeconds: &abortScaleDownDelaySeconds,
+						TrafficRouting:             &v1alpha1.RolloutTrafficRouting{},
+					},
+				},
+			},
+		}
+		assert.Equal(t, abortScaleDownDelaySeconds, GetAbortScaleDownDelaySecondsOrDefault(canaryNonDefaultValue))
+	}
+	{
+		rolloutNoStrategyDefaultValue := &v1alpha1.Rollout{}
+		assert.Equal(t, int32(0), GetAbortScaleDownDelaySecondsOrDefault(rolloutNoStrategyDefaultValue))
+	}
+	{
+		canaryDefaultValue := &v1alpha1.Rollout{
+			Spec: v1alpha1.RolloutSpec{
+				Strategy: v1alpha1.RolloutStrategy{
+					Canary: &v1alpha1.CanaryStrategy{
+						TrafficRouting: &v1alpha1.RolloutTrafficRouting{},
+					},
+				},
+			},
+		}
+		assert.Equal(t, DefaultAbortScaleDownDelaySeconds, GetAbortScaleDownDelaySecondsOrDefault(canaryDefaultValue))
 	}
 }
 
